@@ -9,7 +9,7 @@ namespace DependencyInjectionContainer
             
         }
 
-        public void Register<TDenendancy, TImplementation>() where TDenendancy : class where TImplementation : class
+        public void Register<TDependency, TImplementation>() where TDependency : class where TImplementation : class
         {
             
         }

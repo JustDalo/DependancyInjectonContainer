@@ -2,12 +2,13 @@ namespace DependencyInjectionContainer
 {
     public class DependencyProvider
     {
-        public DependencyProvider()
+        private DependenciesConfiguration _dependenciesConfiguration;
+        public DependencyProvider(DependenciesConfiguration dependenciesConfiguration)
         {
-            
+            this._dependenciesConfiguration = dependenciesConfiguration;
         }
 
-        public void Resolve()
+        public void Resolve<TDependency>() where TDependency : class
         {
                
         }
