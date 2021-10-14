@@ -5,30 +5,29 @@ namespace DependencyInjectionContainer
 {
     public class DependenciesConfiguration
     {
-        public Dictionary<Type, List<Type>> Dependencies;
+        public Dictionary<Type, List<DependencyInfo>> Dependencies;
 
         public DependenciesConfiguration()
         {
-            Dependencies = new Dictionary<Type, List<Type>>();
+            Dependencies = new Dictionary<Type, List<DependencyInfo>>();
         }
 
-        public void Register<TDependency, TImplementation>(bool isSingleton = true) where TDependency : class where TImplementation : class
+        public void Register<TDependency, TImplementation>(bool isSingleton = true) 
+            where TDependency : class 
+            where TImplementation : TDependency
         {
-            if (typeof(TDependency).IsInterface)
+            if (!Dependencies.ContainsKey(typeof(TDependency)))
             {
-                if (!Dependencies.ContainsKey(typeof(TDependency)))
-                {
-                    Dependencies[typeof(TDependency)] = new List<Type>();
-                }
-
-                if (Dependencies[typeof(TDependency)].IndexOf(typeof(TImplementation) ) == -1)
-                {
-                    Dependencies[typeof(TDependency)].Add(typeof(TImplementation));
-                }
+                Dependencies[typeof(TDependency)] = new List<DependencyInfo>();
             }
-            else
+            DependencyInfo dependencyInfo = new DependencyInfo()
             {
-                throw new InvalidOperationException();
+                ImplementationType = typeof(TImplementation),
+                IsSingleton = isSingleton,
+            };
+            if (Dependencies[typeof(TDependency)].IndexOf(dependencyInfo) == -1)
+            {
+                Dependencies[typeof(TDependency)].Add(dependencyInfo);
             }
         }
 

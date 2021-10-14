@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using DependencyInjectionContainer;
 using NUnit.Framework;
 
@@ -22,6 +24,22 @@ namespace DependencyContainerInjectionUnitTests
             var service  = _dependencyProvider.Resolve<IService>();
             Assert.IsTrue(service != null);
         }
+
+        [Test]
+        public void Test2()
+        {
+            
+            var repository = _dependencyProvider.Resolve<IRepository>();
+            Assert.IsTrue(repository != null);
+        }
+
+        [Test]
+        public void Test3()
+        {
+            _dependenciesConfiguration.Register<IService, ServiceImpl2>();
+            IEnumerable<IService> services = _dependencyProvider.Resolve<IEnumerable<IService>>();
+            Assert.AreEqual(2, services.Count());
+        }
     }
     
     interface IService {}
@@ -30,6 +48,14 @@ namespace DependencyContainerInjectionUnitTests
         public ServiceImpl(IRepository repository) // ServiceImpl зависит от IRepository
         {
            
+        }
+    }
+
+    class ServiceImpl2 : IService
+    {
+        public ServiceImpl2()
+        {
+            
         }
     }
 

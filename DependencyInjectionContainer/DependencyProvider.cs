@@ -1,5 +1,8 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.ComponentModel.Design;
+using System.Dynamic;
 using System.Linq;
 using System.Reflection;
 
@@ -20,11 +23,26 @@ namespace DependencyInjectionContainer
 
         private object Resolve(Type dependencyType)
         {
-            if (_dependenciesConfiguration.Dependencies.ContainsKey(dependencyType))
+            //if only one implementation
+            if (_dependenciesConfiguration.Dependencies.ContainsKey(dependencyType) && _dependenciesConfiguration.Dependencies[dependencyType].Count == 1)
             {
-                return Resolution(_dependenciesConfiguration.Dependencies[dependencyType][0]);
+                return Resolution(_dependenciesConfiguration.Dependencies[dependencyType][0].ImplementationType);
             }
+            
+            //if return type has to be IEnumerable
+            if (dependencyType.IsGenericType && dependencyType.GetGenericTypeDefinition().Equals(typeof(IEnumerable<>)))
+            {
+                object result = Activator.CreateInstance(typeof(List<>).MakeGenericType(dependencyType.GenericTypeArguments[0]));
+                foreach (var item in _dependenciesConfiguration.Dependencies[dependencyType.GenericTypeArguments[0]])
+                {
+                    ((IList) result).Add(Resolution(item.ImplementationType));
+                }
+
+                return result;
+            }
+        
             return null;
+            
         }
 
         private object Resolution(Type dependencyType)
