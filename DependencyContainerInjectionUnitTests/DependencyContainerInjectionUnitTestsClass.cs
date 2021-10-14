@@ -11,24 +11,31 @@ namespace DependencyContainerInjectionUnitTests
         public void Setup()
         {
             _dependenciesConfiguration = new DependenciesConfiguration();
-            _dependenciesConfiguration.Register<IBarService, BarImplementation>();
-
+            _dependenciesConfiguration.Register<IService, ServiceImpl>();
+            _dependenciesConfiguration.Register<IRepository, RepositoryImpl>();
             _dependencyProvider = new DependencyProvider(_dependenciesConfiguration);
         }
 
         [Test]
         public void Test1()
         {
-            _dependencyProvider.Resolve<IBarService>();
+            var service  = _dependencyProvider.Resolve<IService>();
+            Assert.IsTrue(service != null);
         }
     }
     
-    public interface IBarService
+    interface IService {}
+    class ServiceImpl : IService
     {
+        public ServiceImpl(IRepository repository) // ServiceImpl зависит от IRepository
+        {
+           
+        }
     }
-    
-    public class BarImplementation : IBarService
+
+    interface IRepository{}
+    class RepositoryImpl : IRepository
     {
-        public BarImplementation() { }
+        public RepositoryImpl(){} // может иметь свои зависимости, опустим для простоты
     }
 }
