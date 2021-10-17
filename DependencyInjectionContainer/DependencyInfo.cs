@@ -7,10 +7,5 @@ namespace DependencyInjectionContainer
     {
         public Type ImplementationType;
         public bool IsSingleton;
-
-        public object GetInstance(DependencyProvider provider)
-        {
-            return provider.Resolve(ImplementationType);
-        }
     }
 }

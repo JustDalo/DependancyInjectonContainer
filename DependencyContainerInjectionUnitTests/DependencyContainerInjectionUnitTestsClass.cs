@@ -14,11 +14,11 @@ namespace DependencyContainerInjectionUnitTests
         public void Setup()
         {
             _dependenciesConfiguration = new DependenciesConfiguration();
-            _dependenciesConfiguration.Register<IService, ServiceImpl>();
-           // _dependenciesConfiguration.Register<IService, ServiceImpl2>();
-            _dependenciesConfiguration.Register<IRepository, RepositoryImpl>();
+            _dependenciesConfiguration.Register<IService, ServiceImpl>(true);
+            _dependenciesConfiguration.Register<IService, ServiceImpl2>(true);                                                                                                                                                               
+            _dependenciesConfiguration.Register<IRepository, RepositoryImpl>(true);
             _dependencyProvider = new DependencyProvider(_dependenciesConfiguration);
-        }
+        }                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
 
         [Test]
         public void Test1()
@@ -49,7 +49,7 @@ namespace DependencyContainerInjectionUnitTests
             var instanceOne = _dependencyProvider.Resolve<IService>();
             var instanceTwo = _dependencyProvider.Resolve<IService>();
             
-            Assert.IsTrue(instanceOne != instanceTwo);
+            Assert.IsTrue(instanceOne == instanceTwo);
         }
     }
     

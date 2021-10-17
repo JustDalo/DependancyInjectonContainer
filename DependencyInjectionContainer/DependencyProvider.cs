@@ -9,9 +9,11 @@ namespace DependencyInjectionContainer
     public class DependencyProvider
     {
         private readonly DependenciesConfiguration _dependenciesConfiguration;
+        private readonly Dictionary<Type, object> _singletons;
         public DependencyProvider(DependenciesConfiguration dependenciesConfiguration)
         {
             _dependenciesConfiguration = dependenciesConfiguration;
+            _singletons = new Dictionary<Type, object>();
         }
 
         public TDependency Resolve<TDependency>() where TDependency : class
@@ -19,15 +21,30 @@ namespace DependencyInjectionContainer
             return (TDependency) Resolve(typeof(TDependency));
         }
 
-        internal object Resolve(Type dependencyType)
+        private object Resolve(Type dependencyType)
         {
-            //if singleton
             if (_dependenciesConfiguration.Dependencies.ContainsKey(dependencyType))
             {
                 if (_dependenciesConfiguration.Dependencies[dependencyType][0].IsSingleton)
                 {
-                    return _dependenciesConfiguration.Dependencies[dependencyType][0].GetInstance(this);
+                    if (_singletons.ContainsKey(dependencyType))
+                    {
+                        return _singletons[dependencyType];
+                    }
+                    else
+                    {
+                        var singletonResolution = Resolution(_dependenciesConfiguration.Dependencies[dependencyType][0]
+                            .ImplementationType);
+                        _singletons.Add(dependencyType, singletonResolution);
+                        return singletonResolution;
+                    }
+
                 }
+            }
+
+            if (_dependenciesConfiguration.Dependencies.ContainsKey(dependencyType))
+            {
+                return Resolution(_dependenciesConfiguration.Dependencies[dependencyType][0].ImplementationType);
             }
             
             //if return type has to be IEnumerable
@@ -41,17 +58,7 @@ namespace DependencyInjectionContainer
 
                 return result;
             }
-            //if only one implementation
-            else
-            {
-                if (_dependenciesConfiguration.Dependencies.ContainsKey(dependencyType))
-                {
-                    return Resolution(_dependenciesConfiguration.Dependencies[dependencyType][0].ImplementationType);
-                }
-            }
-        
             return null;
-            
         }
 
         private object Resolution(Type dependencyType)
@@ -73,10 +80,10 @@ namespace DependencyInjectionContainer
                 {
                     if (_dependenciesConfiguration.Dependencies.ContainsKey(
                         _dependenciesConfiguration.Dependencies.First(x =>
-                            x.Value[0].Equals((parameter.ParameterType))).Key))
+                            false).Key))
                     {
                         tmp[i++] = Resolve(_dependenciesConfiguration.Dependencies.First(x =>
-                            x.Value[0].Equals((parameter.ParameterType))).Key);
+                            false).Key);
                     }
                 }
             }
@@ -84,10 +91,6 @@ namespace DependencyInjectionContainer
             var result = constructor.Invoke(tmp);
             return result;
          
-        }
-        private object GetInstance(DependencyProvider provider)
-        {
-            return null;
         }
     }
     
