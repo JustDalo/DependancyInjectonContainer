@@ -3,15 +3,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using DependencyInjectionContainer.DependenciesConfiguration;
 
 
 namespace DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl
 {
     public class DependencyProvider : IDependencyProvider
     {
-        private readonly DependenciesConfiguration.DependenciesConfigurationImpl.DependenciesConfiguration _dependenciesConfiguration;
+        private readonly IDependencyConfiguration _dependenciesConfiguration;
         private readonly Dictionary<Type, object> _singletons;
-        public DependencyProvider(DependenciesConfiguration.DependenciesConfigurationImpl.DependenciesConfiguration dependenciesConfiguration)
+        public DependencyProvider(IDependencyConfiguration dependenciesConfiguration)
         {
             _dependenciesConfiguration = dependenciesConfiguration;
             _singletons = new Dictionary<Type, object>();
@@ -49,17 +50,15 @@ namespace DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl
             }
             
             //if return type has to be IEnumerable
-            if (dependencyType.IsGenericType && dependencyType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            if (!dependencyType.IsGenericType ||
+                dependencyType.GetGenericTypeDefinition() != typeof(IEnumerable<>)) return null;
+            var result = Activator.CreateInstance(typeof(List<>).MakeGenericType(dependencyType.GenericTypeArguments[0]));
+            foreach (var item in _dependenciesConfiguration.Dependencies[dependencyType.GenericTypeArguments[0]])
             {
-                object result = Activator.CreateInstance(typeof(List<>).MakeGenericType(dependencyType.GenericTypeArguments[0]));
-                foreach (var item in _dependenciesConfiguration.Dependencies[dependencyType.GenericTypeArguments[0]])
-                {
-                    ((IList) result)?.Add(Resolution(item.ImplementationType));
-                }
-
-                return result;
+                ((IList) result)?.Add(Resolution(item.ImplementationType));
             }
-            return null;
+
+            return result;
         }
 
         private object Resolution(Type dependencyType)

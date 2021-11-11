@@ -5,7 +5,7 @@ namespace DependencyInjectionContainer.DependenciesConfiguration.DependenciesCon
 {
     public class DependenciesConfiguration : IDependencyConfiguration
     {
-        public readonly Dictionary<Type, List<DependencyInfo>> Dependencies;
+        public Dictionary<Type, List<DependencyInfo>> Dependencies { get;  }
 
         public DependenciesConfiguration()
         {
