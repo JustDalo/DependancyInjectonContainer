@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace DependencyInjectionContainer.DependenciesConfiguration.DependenciesConfigurationImpl
 {
-    public class DependenciesConfiguration
+    public class DependenciesConfiguration : IDependencyConfiguration
     {
         public readonly Dictionary<Type, List<DependencyInfo>> Dependencies;
 

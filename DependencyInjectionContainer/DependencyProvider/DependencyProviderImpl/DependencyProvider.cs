@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl
 {
-    public class DependencyProvider
+    public class DependencyProvider : IDependencyProvider
     {
         private readonly DependenciesConfiguration.DependenciesConfigurationImpl.DependenciesConfiguration _dependenciesConfiguration;
         private readonly Dictionary<Type, object> _singletons;
