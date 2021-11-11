@@ -4,13 +4,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace DependencyInjectionContainer
+
+namespace DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl
 {
     public class DependencyProvider
     {
-        private readonly DependenciesConfiguration _dependenciesConfiguration;
+        private readonly DependenciesConfiguration.DependenciesConfigurationImpl.DependenciesConfiguration _dependenciesConfiguration;
         private readonly Dictionary<Type, object> _singletons;
-        public DependencyProvider(DependenciesConfiguration dependenciesConfiguration)
+        public DependencyProvider(DependenciesConfiguration.DependenciesConfigurationImpl.DependenciesConfiguration dependenciesConfiguration)
         {
             _dependenciesConfiguration = dependenciesConfiguration;
             _singletons = new Dictionary<Type, object>();

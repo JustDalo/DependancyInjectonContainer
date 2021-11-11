@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace DependencyInjectionContainer
+namespace DependencyInjectionContainer.DependenciesConfiguration.DependenciesConfigurationImpl
 {
     public class DependenciesConfiguration
     {
