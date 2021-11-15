@@ -35,22 +35,25 @@ namespace DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl
         {
             if (!_dependenciesConfiguration.Dependencies.ContainsKey(dependencyType))
                 throw new ArgumentException("Dependency isn't registered");
-            if (_dependenciesConfiguration.Dependencies[dependencyType][0].IsSingleton)
+            lock (_dependenciesConfiguration)
             {
-                if (_singletons.ContainsKey(dependencyType))
+                if (_dependenciesConfiguration.Dependencies[dependencyType][0].IsSingleton)
                 {
-                    return _singletons[dependencyType];
+                    if (_singletons.ContainsKey(dependencyType))
+                    {
+                        return _singletons[dependencyType];
+                    }
+
+                    var singletonResolution = CreateInstance(_dependenciesConfiguration.Dependencies[dependencyType][0]
+                        .ImplementationType);
+                    _singletons.Add(dependencyType, singletonResolution);
+                    return singletonResolution;
                 }
 
-                var singletonResolution = CreateInstance(_dependenciesConfiguration.Dependencies[dependencyType][0]
+                var resolution = CreateInstance(_dependenciesConfiguration.Dependencies[dependencyType][0]
                     .ImplementationType);
-                _singletons.Add(dependencyType, singletonResolution);
-                return singletonResolution;
+                return resolution;
             }
-
-            var resolution = CreateInstance(_dependenciesConfiguration.Dependencies[dependencyType][0]
-                .ImplementationType);
-            return resolution;
         }
 
         private object ResolveIEnumerable(Type dependencyType)
@@ -67,8 +70,6 @@ namespace DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl
             }
 
             return implementationList;
-
-            throw new ArgumentException(" error");
         }
 
         private object CreateInstance(Type implementationType)
@@ -96,7 +97,7 @@ namespace DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl
                 return constructor.Invoke(generatedParameters.ToArray());
             }
 
-            throw new AggregateException("Cannot resolve instance of class");
+            throw new ArgumentException("Cannot resolve instance of class");
         }
     }
 }
