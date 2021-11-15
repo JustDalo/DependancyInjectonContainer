@@ -12,6 +12,7 @@ namespace DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl
     {
         private readonly IDependencyConfiguration _dependenciesConfiguration;
         private readonly Dictionary<Type, object> _singletons;
+
         public DependencyProvider(IDependencyConfiguration dependenciesConfiguration)
         {
             _dependenciesConfiguration = dependenciesConfiguration;
@@ -25,74 +26,79 @@ namespace DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl
 
         private object Resolve(Type dependencyType)
         {
+            if (dependencyType.IsGenericType && dependencyType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                return ResolveIEnumerable(dependencyType);
+            return ResolveNotIEnumerable(dependencyType);
+        }
+
+        private object ResolveNotIEnumerable(Type dependencyType)
+        {
+            if (!_dependenciesConfiguration.Dependencies.ContainsKey(dependencyType))
+                throw new ArgumentException("Dependency isn't registered");
+            if (_dependenciesConfiguration.Dependencies[dependencyType][0].IsSingleton)
+            {
+                if (_singletons.ContainsKey(dependencyType))
+                {
+                    return _singletons[dependencyType];
+                }
+
+                var singletonResolution = CreateInstance(_dependenciesConfiguration.Dependencies[dependencyType][0]
+                    .ImplementationType);
+                _singletons.Add(dependencyType, singletonResolution);
+                return singletonResolution;
+            }
+
+            var resolution = CreateInstance(_dependenciesConfiguration.Dependencies[dependencyType][0]
+                .ImplementationType);
+            return resolution;
+        }
+
+        private object ResolveIEnumerable(Type dependencyType)
+        {
+            var implementationList =
+                (IList) Activator.CreateInstance(typeof(List<>).MakeGenericType(dependencyType));
             if (_dependenciesConfiguration.Dependencies.ContainsKey(dependencyType))
             {
-                if (_dependenciesConfiguration.Dependencies[dependencyType][0].IsSingleton)
+                var implementationsContainers = _dependenciesConfiguration.Dependencies[dependencyType];
+                foreach (var implementationContainer in implementationsContainers)
                 {
-                    if (_singletons.ContainsKey(dependencyType))
+                    var instance = this.ResolveNotIEnumerable(implementationContainer.ImplementationType);
+                    implementationList?.Add(instance);
+                }
+
+                return implementationList;
+            }
+            throw new ArgumentException(" error");
+        }
+
+        private object CreateInstance(Type implementationType)
+        {
+            var constructors = implementationType.GetConstructors(BindingFlags.Instance | BindingFlags.Public);
+            foreach (var constructor in constructors)
+            {
+                var parameters = constructor.GetParameters();
+                var generatedParameters = new List<dynamic>();
+                foreach (var parameter in parameters)
+                {
+                    dynamic createdParameter;
+                    if (parameter.ParameterType.IsInterface)
                     {
-                        return _singletons[dependencyType];
+                        createdParameter = Resolve(parameter.ParameterType);
                     }
                     else
                     {
-                        var singletonResolution = Resolution(_dependenciesConfiguration.Dependencies[dependencyType][0]
-                            .ImplementationType);
-                        _singletons.Add(dependencyType, singletonResolution);
-                        return singletonResolution;
+                        break;
                     }
 
+                    generatedParameters.Add(createdParameter);
                 }
+
+                return constructor.Invoke(generatedParameters.ToArray());
             }
 
-            if (_dependenciesConfiguration.Dependencies.ContainsKey(dependencyType))
-            {
-                return Resolution(_dependenciesConfiguration.Dependencies[dependencyType][0].ImplementationType);
-            }
-            
-            //if return type has to be IEnumerable
-            if (!dependencyType.IsGenericType ||
-                dependencyType.GetGenericTypeDefinition() != typeof(IEnumerable<>)) return null;
-            var result = Activator.CreateInstance(typeof(List<>).MakeGenericType(dependencyType.GenericTypeArguments[0]));
-            foreach (var item in _dependenciesConfiguration.Dependencies[dependencyType.GenericTypeArguments[0]])
-            {
-                ((IList) result)?.Add(Resolution(item.ImplementationType));
-            }
-
-            return result;
+            throw new AggregateException("Cannot resolve instance of class");
         }
 
-        private object Resolution(Type dependencyType)
-        {
-            ConstructorInfo[] constructors = dependencyType.GetConstructors();
-            ConstructorInfo constructor = constructors[0];
-
-            ParameterInfo[] parameters = constructor.GetParameters();
-            object[] tmp = new object[parameters.Length];
-            int i = 0;
-
-            foreach (var parameter in parameters)
-            {
-                if (_dependenciesConfiguration.Dependencies.ContainsKey(parameter.ParameterType))
-                {
-                    tmp[i++] = Resolve(parameter.ParameterType);
-                }
-                else
-                {
-                    if (_dependenciesConfiguration.Dependencies.ContainsKey(
-                        _dependenciesConfiguration.Dependencies.First(x =>
-                            false).Key))
-                    {
-                        tmp[i++] = Resolve(_dependenciesConfiguration.Dependencies.First(x =>
-                            false).Key);
-                    }
-                }
-            }
-
-            var result = constructor.Invoke(tmp);
-            return result;
-         
-        }
+        
     }
-    
-    
 }
