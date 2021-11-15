@@ -56,18 +56,18 @@ namespace DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl
         private object ResolveIEnumerable(Type dependencyType)
         {
             var implementationList =
-                (IList) Activator.CreateInstance(typeof(List<>).MakeGenericType(dependencyType));
-            if (_dependenciesConfiguration.Dependencies.ContainsKey(dependencyType))
-            {
-                var implementationsContainers = _dependenciesConfiguration.Dependencies[dependencyType];
-                foreach (var implementationContainer in implementationsContainers)
-                {
-                    var instance = this.ResolveNotIEnumerable(implementationContainer.ImplementationType);
-                    implementationList?.Add(instance);
-                }
+                (IList) Activator.CreateInstance(typeof(List<>).MakeGenericType(dependencyType.GetGenericArguments()[0]));
 
-                return implementationList;
+            var implementationsContainers =
+                _dependenciesConfiguration.Dependencies[dependencyType.GetGenericArguments()[0]];
+            foreach (var implementationContainer in implementationsContainers)
+            {
+                var instance = ResolveNotIEnumerable(dependencyType.GetGenericArguments()[0]);
+                implementationList?.Add(instance);
             }
+
+            return implementationList;
+
             throw new ArgumentException(" error");
         }
 
@@ -98,7 +98,5 @@ namespace DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl
 
             throw new AggregateException("Cannot resolve instance of class");
         }
-
-        
     }
 }
