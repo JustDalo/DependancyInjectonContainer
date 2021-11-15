@@ -1,9 +1,5 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using DependencyInjectionContainer;
 using DependencyInjectionContainer.DependenciesConfiguration.DependenciesConfigurationImpl;
 using DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl;
 using NUnit.Framework;
@@ -14,207 +10,117 @@ namespace DependencyContainerInjectionUnitTests
     {
         private DependenciesConfiguration _dependenciesConfiguration;
         private DependencyProvider _dependencyProvider;
-        
-        private DependencyProvider _provider;
-        private DependenciesConfiguration _config;
+
         [SetUp]
         public void Setup()
         {
             _dependenciesConfiguration = new DependenciesConfiguration();
-         //   _dependenciesConfiguration.Register<IService<IRepository>, ServiceImpl<IRepository>>(true);
-            //_dependenciesConfiguration.Register<IService, ServiceImpl2>(true);
-            _dependenciesConfiguration.Register(typeof(IService<>), typeof(ServiceImpl2<>), true);
-           // _dependenciesConfiguration.Register<IRepository, RepositoryImpl>();
-           // _dependencyProvider = new DependencyProvider(_dependenciesConfiguration); 
-            
-            // _config = new DependenciesConfiguration();
-            // _config.Register<IFooService, FooImplementation<BarImplementation>>(isSingleton: false);
-            // _config.Register<IFooService, AnotherFooImplementation>(false);
-            // _config.Register<IBarService, BarImplementation>(true);            
-            // _config.Register<IBazService<BarImplementation>, AnotherBazImplementation<BarImplementation>>(false);
-            // _config.Register(typeof(IBazService<>), typeof(AnotherBazImplementation<>), false);
-            //
-            // _provider = new DependencyProvider(_config);
-        }                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+            _dependenciesConfiguration.Register(typeof(IService), typeof(ServiceImpl), true);
+            _dependenciesConfiguration.Register(typeof(IService), typeof(ServiceImpl3), true);
+            _dependenciesConfiguration.Register<IRepository, RepositoryImpl>(true);
+            _dependencyProvider = new DependencyProvider(_dependenciesConfiguration);
+        }
 
         [Test]
         public void Test1()
         {
-            var service  = _dependencyProvider.Resolve<IService<IRepository>>();
+            var service = _dependencyProvider.Resolve<IService>();
             Assert.IsTrue(service != null);
         }
 
         [Test]
         public void Test2()
         {
-            var repository = _dependencyProvider.Resolve<IRepository>();
-            Assert.IsTrue(repository != null);
+            var dependencyConfig = new DependenciesConfiguration();
+            dependencyConfig.Register<IService, ServiceImpl>();
+            dependencyConfig.Register<IRepository, RepositoryImpl>();
+            var dependencyProvider = new DependencyProvider(dependencyConfig);
+            var service = dependencyProvider.Resolve<IService>();
+            Assert.IsTrue(service != null);
         }
 
         [Test]
         public void Test3()
         {
-            IEnumerable<IService<IRepository>> services = _dependencyProvider.Resolve<IEnumerable<IService<IRepository>>>();
-            Assert.AreEqual(2, services.Count());
+            IEnumerable<IService> services = _dependencyProvider.Resolve<IEnumerable<IService>>();
+            var impl = _dependencyProvider.Resolve<IService>();
+            Assert.That(impl, Is.EqualTo(services.ElementAt(0)));
         }
 
         [Test]
         public void Test4()
         {
-            //   var instanceOne = _dependencyProvider.Resolve<IService>();
-            //var instanceTwo = _dependencyProvider.Resolve<IService>();
-            
-            // Assert.IsTrue(instanceOne.Equals(instanceTwo));
+            var dependencyConfiguration = new DependenciesConfiguration();
+            dependencyConfiguration.Register<IService, ServiceImpl>(true);
+            dependencyConfiguration.Register<IService, ServiceImpl3>(true);
+            dependencyConfiguration.Register<IRepository, RepositoryImpl>(true);
+            var dependencyProvider = new DependencyProvider(dependencyConfiguration);
+            var services = dependencyProvider.Resolve<IEnumerable<IService>>();
+            var impl = dependencyProvider.Resolve<IService>();
+            Assert.That(impl, Is.EqualTo(services.ElementAt(0)));
         }
 
         [Test]
         public void Test5()
         {
-         //   var enumerableInstanceOne = _dependencyProvider.Resolve<IEnumerable<IService>>();
-         //   var enumerableInstanceTwo = _dependencyProvider.Resolve<IEnumerable<IService>>();
-            
-         //   Assert.IsTrue(enumerableInstanceOne.Equals(enumerableInstanceTwo));
+            //   var enumerableInstanceOne = _dependencyProvider.Resolve<IEnumerable<IService>>();
+            //   var enumerableInstanceTwo = _dependencyProvider.Resolve<IEnumerable<IService>>();
+
+            //   Assert.IsTrue(enumerableInstanceOne.Equals(enumerableInstanceTwo));
         }
 
         [Test]
         public void Test6()
         {
-            
+            var config = new DependenciesConfiguration();
+            config.Register<IMessageSender, chat>();
+            config.Register<IRepository, RepositoryImpl>();
+            var provider = new DependencyProvider(config);
+            var s = provider.Resolve<IMessageSender>();
+            Assert.NotNull(s);
         }
-        /*[Test]
-        public void DependencyProviderEnumerableTest()
-        {
-            IEnumerable<IFooService> fooService = _provider.Resolve<IEnumerable<IFooService>>();
-            Assert.IsTrue(fooService != null);
-        }
-
-        [Test]
-        public void DependencyProviderAnotherBazImplementationTest()
-        {
-            AnotherBazImplementation<BarImplementation> anotherBaz =
-                (AnotherBazImplementation<BarImplementation>)_provider.Resolve<IBazService<BarImplementation>>();
-
-            bool isAnotherBazImplementation = anotherBaz.GetType().Equals(typeof(AnotherBazImplementation<BarImplementation>));
-
-            bool isBarImplementation = anotherBaz.BarService.GetType().Equals(typeof(BarImplementation));
-
-            Assert.IsTrue(isAnotherBazImplementation && isBarImplementation);
-        }
-
-       
-
-        [Test]
-        public void DependencyProviderSingletonContainerTest()
-        {
-            var actual = _provider.Resolve<IBarService>();
-            Assert.IsNotNull(actual);
-        }
-
-        [Test]
-        public void DependencyProviderSingletonBarImplementationTest()
-        {
-            AnotherBazImplementation<BarImplementation> anotherBaz =
-                (AnotherBazImplementation<BarImplementation>)_provider.Resolve<IBazService<BarImplementation>>();
-
-            BarImplementation bar = (BarImplementation)_provider.Resolve<IBarService>();
-
-            Assert.AreSame(anotherBaz.BarService, bar);
-        }
-        */
-
-       
-        
-        
     }
-    
-    interface IService<TRepository> where TRepository : IRepository {}
-    class ServiceImpl<TRepository> : IService<TRepository> where TRepository : IRepository
+
+    interface IService
+    {
+    }
+
+    class ServiceImpl : IService
     {
         private IRepository repository;
-        public ServiceImpl(IRepository repository) // ServiceImpl зависит от IRepository
+
+        public ServiceImpl(IRepository repository)
         {
             this.repository = repository;
         }
     }
 
-    interface IRepository{}
+    interface IRepository
+    {
+    }
+
     class RepositoryImpl : IRepository
     {
-        public RepositoryImpl(){} // может иметь свои зависимости, опустим для простоты
+        public RepositoryImpl()
+        {
+        }
     }
-    
-    class ServiceImpl2<TRepository> : IService<TRepository> where TRepository : IRepository
+
+    interface IMessageSender
     {
-        public ServiceImpl2()
+        
+    }
+
+    class chat : IMessageSender
+    {
+        public chat(IRepository something)
         {
             
         }
     }
 
-    /*public interface IFooService
+    class ServiceImpl3 : IService
     {
+        
     }
-    public interface IFaker
-    {
-        // Faker for test
-    }
-    public interface IBazService<T>
-    {
-    }
-    public interface IBarService
-    {
-    }
-    
-    public class FooImplementation<T> : IFooService
-    {
-        public IBarService BarService { get; set; }
-
-        public IBazService<T> BazService { get; set; }
-
-        public FooImplementation(IBarService barService, IBazService<T> bazService)
-        {
-            BarService = barService;
-            BazService = bazService;
-        }
-    }
-    public class BazImplementation<T> : IBazService<T>
-    {
-        public IBarService FirstBarService { get; set; }
-
-        public IBarService SecondBarService { get; set; }
-
-        public BazImplementation(IBarService firstBarService, IBarService secondBarService)
-        {
-            FirstBarService = firstBarService;
-            SecondBarService = secondBarService;
-        }
-    }
-    public class BarImplementation : IBarService
-    {
-        public BarImplementation() { }
-    }
-    public class AnotherFooImplementation : IFooService
-    {
-        public IBarService BarService { get; set; }
-
-        public AnotherFooImplementation(IBarService barService)
-        {
-            BarService = barService;
-        }
-    }
-    public class AnotherBazImplementation<T> : IBazService<T>
-    {
-        public T GenericParameter { get; set; }
-
-        public T BarService { get; set; }
-
-        public AnotherBazImplementation(T barService)
-        {
-            BarService = barService;
-        }
-    }
-    public class AnotherBarImplementation : IBarService
-    {
-        public AnotherBarImplementation(IBarService barService) { }
-    }*/
 }
