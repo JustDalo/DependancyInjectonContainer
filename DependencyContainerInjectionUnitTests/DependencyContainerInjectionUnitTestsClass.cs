@@ -48,7 +48,7 @@ namespace DependencyContainerInjectionUnitTests
         }
 
         [Test]
-        public void Test4()
+        public void SingletonInIEnumerable()
         {
             var dependencyConfiguration = new DependenciesConfiguration();
             dependencyConfiguration.Register<IService, ServiceImpl>(true);
@@ -61,15 +61,6 @@ namespace DependencyContainerInjectionUnitTests
         }
 
         [Test]
-        public void Test5()
-        {
-            //   var enumerableInstanceOne = _dependencyProvider.Resolve<IEnumerable<IService>>();
-            //   var enumerableInstanceTwo = _dependencyProvider.Resolve<IEnumerable<IService>>();
-
-            //   Assert.IsTrue(enumerableInstanceOne.Equals(enumerableInstanceTwo));
-        }
-
-        [Test]
         public void Test6()
         {
             var config = new DependenciesConfiguration();
@@ -78,6 +69,17 @@ namespace DependencyContainerInjectionUnitTests
             var provider = new DependencyProvider(config);
             var s = provider.Resolve<IMessageSender>();
             Assert.NotNull(s);
+        }
+
+        [Test]
+        public void Test7()
+        {
+            var config = new DependenciesConfiguration();
+            config.Register(typeof(IInterface<>), typeof(Ex<>));
+            config.Register(typeof(IRep), typeof(Rep));
+            var provider = new DependencyProvider(config);
+            var expected = provider.Resolve<IInterface<IRep>>();
+            Assert.Fail();
         }
     }
 
@@ -122,5 +124,28 @@ namespace DependencyContainerInjectionUnitTests
     class ServiceImpl3 : IService
     {
         
+    }
+    
+    public interface IRep { }
+
+    public class Rep : IRep
+    {
+
+    }
+
+    public interface IInterface<TRep> where TRep : IRep
+    {
+        TRep F { get; }
+    }
+
+    public class Ex<TRep> : IInterface<TRep>
+        where TRep : IRep
+    {
+        public Ex(TRep TImpl)
+        {
+            this.F = TImpl;
+        }
+
+        public TRep F { get; }
     }
 }
