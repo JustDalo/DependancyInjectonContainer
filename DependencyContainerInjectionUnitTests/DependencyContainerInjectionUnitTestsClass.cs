@@ -1,85 +1,217 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using DependencyInjectionContainer;
+using DependencyInjectionContainer.DependenciesConfiguration;
 using DependencyInjectionContainer.DependenciesConfiguration.DependenciesConfigurationImpl;
 using DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl;
+using Moq;
 using NUnit.Framework;
 
 namespace DependencyContainerInjectionUnitTests
 {
     public class DependencyContainerInjectionUnitTestsClass
     {
-        private DependenciesConfiguration _dependenciesConfiguration;
-        private DependencyProvider _dependencyProvider;
+        private Mock<IDependencyConfiguration> _dependencyConfigurationMock;
+
 
         [SetUp]
         public void Setup()
         {
-            _dependenciesConfiguration = new DependenciesConfiguration();
-            _dependenciesConfiguration.Register(typeof(IService), typeof(ServiceImpl), true);
-            _dependenciesConfiguration.Register(typeof(IService), typeof(ServiceImpl3), true);
-            _dependenciesConfiguration.Register<IRepository, RepositoryImpl>(true);
-            _dependencyProvider = new DependencyProvider(_dependenciesConfiguration);
+            _dependencyConfigurationMock = new Mock<IDependencyConfiguration>();
         }
 
         [Test]
-        public void Test1()
-        {
-            var service = _dependencyProvider.Resolve<IService>();
-            Assert.IsTrue(service != null);
-        }
-
-        [Test]
-        public void Test2()
-        {
-            var dependencyConfig = new DependenciesConfiguration();
-            dependencyConfig.Register<IService, ServiceImpl>();
-            dependencyConfig.Register<IRepository, RepositoryImpl>();
-            var dependencyProvider = new DependencyProvider(dependencyConfig);
-            var service = dependencyProvider.Resolve<IService>();
-            Assert.IsTrue(service != null);
-        }
-
-        [Test]
-        public void Test3()
-        {
-            IEnumerable<IService> services = _dependencyProvider.Resolve<IEnumerable<IService>>();
-            var impl = _dependencyProvider.Resolve<IService>();
-            Assert.That(impl, Is.EqualTo(services.ElementAt(0)));
-        }
-
-        [Test]
-        public void SingletonInIEnumerable()
+        public void Register_RegisterTwoInterface_ReturnSameNumber()
         {
             var dependencyConfiguration = new DependenciesConfiguration();
-            dependencyConfiguration.Register<IService, ServiceImpl>(true);
-            dependencyConfiguration.Register<IService, ServiceImpl3>(true);
-            dependencyConfiguration.Register<IRepository, RepositoryImpl>(true);
-            var dependencyProvider = new DependencyProvider(dependencyConfiguration);
+            dependencyConfiguration.Register<IService, ServiceImpl>();
+            dependencyConfiguration.Register<IService, ServiceImpl2>();
+            dependencyConfiguration.Register<IRepository, RepositoryImpl>();
+
+            var actual = dependencyConfiguration.Dependencies.Count;
+
+            const int expected = 2;
+            Assert.That(actual, Is.EqualTo(expected));
+        }
+        
+        [Test]
+        public void Register_RegisterGenericTypeOfImplementation_RegisterGenericType()
+        {   
+            var dependencyConfiguration = new DependenciesConfiguration();
+            dependencyConfiguration.Register(typeof(IInterface<IRep>), typeof(Ex<IRep>));
+            dependencyConfiguration.Register(typeof(IRep), typeof(Rep));
+
+            var actual = dependencyConfiguration.Dependencies.Count;
+
+            const int expected = 2;
+            Assert.That(actual, Is.EqualTo(expected));
+        }
+        
+        [Test]
+        public void Resolve_RecursiveDependencyCreation_ResolveImplementations()
+        {
+            _dependencyConfigurationMock.Setup(expr => expr.Dependencies)
+                .Returns(new Dictionary<Type, List<DependencyInfo>>
+                {
+                    {
+                        typeof(IService),
+                        new List<DependencyInfo>()
+                        {
+                            new()
+                            {
+                                ImplementationType = typeof(ServiceImpl),
+                                IsSingleton = false
+                            },
+                            new()
+                            {
+                                ImplementationType = typeof(ServiceImpl2),
+                                IsSingleton = false,
+                            }
+                        }
+                    },
+                    {
+                        typeof(IRepository),
+                        new List<DependencyInfo>()
+                        {
+                            new()
+                            {
+                                ImplementationType = typeof(RepositoryImpl),
+                                IsSingleton = false
+                            }
+                        }
+                    }
+                });
+
+            DependencyProvider dependencyProvider = new DependencyProvider(_dependencyConfigurationMock.Object);
+            var actual = dependencyProvider.Resolve<IService>();
+
+            Assert.NotNull(actual);
+        }
+
+        [Test]
+        public void Resolve_MultipleImplementationOfOneDependency_ReturnIEnumerableWithDifferentImplementations()
+        {   
+            _dependencyConfigurationMock.Setup(expr => expr.Dependencies)
+                .Returns(new Dictionary<Type, List<DependencyInfo>>
+                {
+                    {
+                        typeof(IService),
+                        new List<DependencyInfo>()
+                        {
+                            new()
+                            {
+                                ImplementationType = typeof(ServiceImpl),
+                                IsSingleton = true
+                            },
+                            new()
+                            {
+                                ImplementationType = typeof(ServiceImpl2),
+                                IsSingleton = true,
+                            }
+                        }
+                    },
+                    {
+                        typeof(IRepository),
+                        new List<DependencyInfo>()
+                        {
+                            new()
+                            {
+                                ImplementationType = typeof(RepositoryImpl),
+                                IsSingleton = true
+                            }
+                        }
+                    }
+                });
+            var dependencyProvider = new DependencyProvider(_dependencyConfigurationMock.Object);
+            
+            var services = dependencyProvider.Resolve<IEnumerable<IService>>();
+            var actual = services.Count();
+            
+            const int expected = 2;
+            Assert.That(actual, Is.EqualTo(expected));
+            
+        }
+
+        [Test]
+        public void Resolve_SingletonLifeCycle_DependenciesAreTheSame()
+        {
+            _dependencyConfigurationMock.Setup(expr => expr.Dependencies)
+                .Returns(new Dictionary<Type, List<DependencyInfo>>
+                {
+                    {
+                        typeof(IService),
+                        new List<DependencyInfo>()
+                        {
+                            new()
+                            {
+                                ImplementationType = typeof(ServiceImpl),
+                                IsSingleton = true
+                            },
+                            new()
+                            {
+                                ImplementationType = typeof(ServiceImpl2),
+                                IsSingleton = true,
+                            }
+                        }
+                    },
+                    {
+                        typeof(IRepository),
+                        new List<DependencyInfo>()
+                        {
+                            new()
+                            {
+                                ImplementationType = typeof(RepositoryImpl),
+                                IsSingleton = true
+                            }
+                        }
+                    }
+                });
+            var dependencyProvider = new DependencyProvider(_dependencyConfigurationMock.Object);
             var services = dependencyProvider.Resolve<IEnumerable<IService>>();
             var impl = dependencyProvider.Resolve<IService>();
             Assert.That(impl, Is.EqualTo(services.ElementAt(0)));
         }
 
         [Test]
-        public void Test6()
+        public void Resolve_UnregisteredDependency_ThrowsArgumentException()
         {
-            var config = new DependenciesConfiguration();
-            config.Register<IMessageSender, chat>();
-            config.Register<IRepository, RepositoryImpl>();
-            var provider = new DependencyProvider(config);
-            var s = provider.Resolve<IMessageSender>();
-            Assert.NotNull(s);
+            _dependencyConfigurationMock.Setup(expr => expr.Dependencies)
+                .Returns(new Dictionary<Type, List<DependencyInfo>>
+                {
+                    {
+                        typeof(IService),
+                        new List<DependencyInfo>()
+                        {
+                            new()
+                            {
+                                ImplementationType = typeof(ServiceImpl),
+                                IsSingleton = false
+                            },
+                            new()
+                            {
+                                ImplementationType = typeof(ServiceImpl2),
+                                IsSingleton = false,
+                            }
+                        }
+                    }
+                });
+            var dependencyProvider = new DependencyProvider(_dependencyConfigurationMock.Object);
+
+            void Actual() => dependencyProvider.Resolve<IService>();
+            Assert.Throws<ArgumentException>(Actual);
         }
 
+
         [Test]
-        public void Test7()
+        public void GenericRegistration()
         {
             var config = new DependenciesConfiguration();
-            config.Register(typeof(IInterface<>), typeof(Ex<>));
+            config.Register(typeof(IInterface<IRep>), typeof(Ex<IRep>));
             config.Register(typeof(IRep), typeof(Rep));
             var provider = new DependencyProvider(config);
             var expected = provider.Resolve<IInterface<IRep>>();
-            Assert.Fail();
+            Assert.NotNull(expected);
         }
     }
 
@@ -89,12 +221,16 @@ namespace DependencyContainerInjectionUnitTests
 
     class ServiceImpl : IService
     {
-        private IRepository repository;
+        private IRepository _repository;
 
         public ServiceImpl(IRepository repository)
         {
-            this.repository = repository;
+            _repository = repository;
         }
+    }
+
+    class ServiceImpl2 : IService
+    {
     }
 
     interface IRepository
@@ -103,34 +239,15 @@ namespace DependencyContainerInjectionUnitTests
 
     class RepositoryImpl : IRepository
     {
-        public RepositoryImpl()
-        {
-        }
     }
 
-    interface IMessageSender
-    {
-        
-    }
 
-    class chat : IMessageSender
+    public interface IRep
     {
-        public chat(IRepository something)
-        {
-            
-        }
     }
-
-    class ServiceImpl3 : IService
-    {
-        
-    }
-    
-    public interface IRep { }
 
     public class Rep : IRep
     {
-
     }
 
     public interface IInterface<TRep> where TRep : IRep
@@ -141,11 +258,10 @@ namespace DependencyContainerInjectionUnitTests
     public class Ex<TRep> : IInterface<TRep>
         where TRep : IRep
     {
+        public TRep F { get; }
         public Ex(TRep TImpl)
         {
             this.F = TImpl;
         }
-
-        public TRep F { get; }
     }
 }
