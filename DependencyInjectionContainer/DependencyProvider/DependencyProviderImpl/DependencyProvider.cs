@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using DependencyInjectionContainer.DependenciesConfiguration;
 
@@ -28,13 +27,15 @@ namespace DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl
         {
             if (dependencyType.IsGenericType && dependencyType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
                 return ResolveIEnumerable(dependencyType);
+           
             return ResolveNotIEnumerable(dependencyType);
         }
 
         private object ResolveNotIEnumerable(Type dependencyType)
         {
+            
             if (!_dependenciesConfiguration.Dependencies.ContainsKey(dependencyType))
-                throw new ArgumentException("Dependency isn't registered");
+                throw new ArgumentException("The dependency is not registered " + dependencyType);
             if (_dependenciesConfiguration.Dependencies[dependencyType][0].IsSingleton)
             {
                 if (_singletons.ContainsKey(dependencyType))
@@ -67,8 +68,6 @@ namespace DependencyInjectionContainer.DependencyProvider.DependencyProviderImpl
             }
 
             return implementationList;
-
-            throw new ArgumentException(" error");
         }
 
         private object CreateInstance(Type implementationType)
